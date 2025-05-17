@@ -2,6 +2,8 @@
 
 Greptile is a tool that uses AI to automatically generate changelogs from your git commit history, making it easy to keep your users updated about changes to your product.
 
+https://www.loom.com/share/5e3f82da98214659a7137541a597bc6a?sid=fe422c18-c97b-4456-a620-31aeddf3291a
+
 ## Features
 
 - **CLI Tool**: Quickly generate changelogs from your git commits
