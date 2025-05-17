@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "bin/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["data/**"]
+      }
     }
   ],
   "routes": [
@@ -14,10 +17,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "bin/server.js": {
-      "includeFiles": "data/**"
-    }
   }
 } 
