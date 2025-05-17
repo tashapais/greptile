@@ -38,6 +38,14 @@ export async function generateChangelog(options) {
 
     console.log(chalk.blue(`Generating changelog from "${options.since}" to "${options.until}"...`));
     
+    // Get current git repository path
+    try {
+      const gitDir = await git.revparse(['--show-toplevel']);
+      console.log(chalk.blue(`Using git repository at: ${gitDir}`));
+    } catch (err) {
+      console.log(chalk.yellow('Warning: Could not determine git repository path'));
+    }
+    
     // Get git log
     const commits = await getCommits(options.since, options.until);
     
@@ -47,6 +55,16 @@ export async function generateChangelog(options) {
     }
     
     console.log(chalk.green(`Found ${commits.length} commits.`));
+    
+    // Print some info about the commits for debugging
+    commits.forEach((commit, index) => {
+      console.log(chalk.blue(`Commit ${index + 1}:`));
+      console.log(chalk.blue(`  Hash: ${commit.hash}`));
+      console.log(chalk.blue(`  Author: ${commit.author}`));
+      console.log(chalk.blue(`  Date: ${commit.date}`));
+      console.log(chalk.blue(`  Subject: ${commit.subject}`));
+    });
+    
     console.log(chalk.blue('Analyzing commits and generating changelog...'));
     
     // Generate changelog using OpenAI
@@ -70,26 +88,38 @@ export async function generateChangelog(options) {
  * Get commits from the git repository
  */
 async function getCommits(since, until) {
-  const logOptions = [
-    '--pretty=format:%h|%an|%ad|%s',
-    '--date=iso',
-    `--since="${since}"`,
-    `--until="${until}"`
-  ];
-  
-  const log = await git.log(logOptions);
-  
-  if (!log || !log.all) {
+  try {
+    // Use a more direct approach with simpleGit
+    const options = ['--date=iso'];
+    
+    if (since) {
+      options.push(`--since="${since}"`);
+    }
+    
+    if (until && until !== 'now') {
+      options.push(`--until="${until}"`);
+    }
+    
+    console.log(chalk.blue(`Git log options: ${options.join(' ')}`));
+    
+    const logs = await git.log(options);
+    
+    console.log(chalk.green(`Raw log entries: ${logs.total}`));
+    
+    if (logs.total === 0) {
+      return [];
+    }
+    
+    return logs.all.map(commit => ({
+      hash: commit.hash,
+      author: commit.author_name,
+      date: commit.date,
+      subject: commit.message.split('\n')[0]
+    }));
+  } catch (error) {
+    console.error(chalk.red('Error getting git commits:'), error.message);
     return [];
   }
-
-  // Parse raw log into structured format
-  const rawLog = log.all.join('\n');
-  
-  return rawLog.split('\n').map(line => {
-    const [hash, author, date, subject] = line.split('|');
-    return { hash, author, date, subject };
-  });
 }
 
 /**
@@ -110,6 +140,8 @@ I need a changelog based on the following git commits.
 Please categorize the changes into sections like "New Features", "Improvements", "Bug Fixes", etc.
 Format them as bullet points that are clear and user-focused.
 Only include changes that would be relevant to users of the product.
+Make your entries specific to the actual commit messages and content, not generic examples.
+If a commit message doesn't clearly indicate a user-facing change, you may use generic language but try to be relevant to the repository.
 Commits:
 
 ${commitsText}
@@ -119,7 +151,7 @@ ${commitsText}
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a technical writer tasked with creating changelogs from git commits. Focus on what matters to users, not implementation details." },
+        { role: "system", content: "You are a technical writer tasked with creating changelogs from git commits. Focus on what matters to users, not implementation details. Be specific to the actual commits, not generic examples." },
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
@@ -205,19 +237,40 @@ function generateTitle(commits) {
   }
   
   // Sort commits by date
-  commits.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  const firstDate = new Date(commits[0].date);
-  const lastDate = new Date(commits[commits.length - 1].date);
-  
-  const firstDateStr = firstDate.toLocaleDateString('en-US', dateFormat);
-  const lastDateStr = lastDate.toLocaleDateString('en-US', dateFormat);
-  
-  if (firstDateStr === lastDateStr) {
-    return `Changes for ${firstDateStr}`;
+  try {
+    // Validate dates before sorting
+    commits = commits.filter(commit => {
+      const date = new Date(commit.date);
+      return !isNaN(date.getTime());
+    });
+    
+    if (commits.length === 0) {
+      return 'Recent Changes';
+    }
+    
+    commits.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const firstDate = new Date(commits[0].date);
+    const lastDate = new Date(commits[commits.length - 1].date);
+    
+    // Verify dates are valid
+    if (isNaN(firstDate.getTime()) || isNaN(lastDate.getTime())) {
+      console.log(chalk.yellow('Warning: Invalid date detected in commits'));
+      return 'Recent Changes';
+    }
+    
+    const firstDateStr = firstDate.toLocaleDateString('en-US', dateFormat);
+    const lastDateStr = lastDate.toLocaleDateString('en-US', dateFormat);
+    
+    if (firstDateStr === lastDateStr) {
+      return `Changes for ${firstDateStr}`;
+    }
+    
+    return `Changes from ${firstDateStr} to ${lastDateStr}`;
+  } catch (error) {
+    console.log(chalk.yellow(`Warning: Error generating title: ${error.message}`));
+    return 'Recent Changes';
   }
-  
-  return `Changes from ${firstDateStr} to ${lastDateStr}`;
 }
 
 /**
