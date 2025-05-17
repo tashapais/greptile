@@ -12,7 +12,7 @@ Greptile is a tool that uses AI to automatically generate changelogs from your g
 
 ## User-Centered Design
 
-Greptile was built with these user-centered design principles:
+Greptile Changelog was built with these user-centered design principles:
 
 - **Repository Awareness**: Automatically detects and organizes changelogs by repository
 - **Automatic Refresh**: Web interface auto-refreshes to show newly generated changelogs without manual intervention

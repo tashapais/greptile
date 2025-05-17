@@ -1,5 +1,78 @@
 [
   {
+    "id": "1747473015490",
+    "repoName": "tashapais-greptile",
+    "repoUrl": "https://github.com/tashapais/greptile",
+    "title": "Improved Data Handling and Deployment Support",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "2 weeks ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "New Features",
+        "items": [
+          "Added codebase indexing before querying the Greptile API",
+          "Implemented more nuanced response generation compared to pure OpenAI responses",
+          "**User Benefit**: More accurate and context-aware changelog entries that better reflect actual code changes",
+          "Added necessary configuration files for Vercel deployment",
+          "Included generated changelogs in deployment",
+          "**User Benefit**: Enables users to access changelogs through a hosted web interface"
+        ]
+      },
+      {
+        "category": "Improvements",
+        "items": [
+          "Simplified data path resolution logic",
+          "Added comprehensive debugging capabilities",
+          "Implemented multiple data directory path checking for Vercel environment",
+          "**User Benefit**: More reliable access to changelog data, especially in deployed environments",
+          "Updated build script to properly preserve data files",
+          "Modified Vercel configuration to include data directory",
+          "**User Benefit**: Ensures changelogs remain accessible after deployment updates",
+          "Fixed Greptile API integration issues",
+          "Addressed rate limiting problems with OpenAI API calls",
+          "**User Benefit**: More reliable changelog generation with fewer service interruptions",
+          "Implemented user-centered product design choices",
+          "**User Benefit**: More intuitive and user-friendly interface for accessing changelogs"
+        ]
+      },
+      {
+        "category": "Bug Fixes",
+        "items": [
+          "Fixed issue with current commit analysis",
+          "Eliminated default response behavior",
+          "**User Benefit**: More accurate changelog entries that properly reflect recent changes",
+          "Fixed website-related issues",
+          "**User Benefit**: Improved web interface reliability"
+        ]
+      },
+      {
+        "category": "Initial Setup",
+        "items": [
+          "First commit establishing the project structure",
+          "**User Benefit**: Foundation for the changelog generation tool"
+        ]
+      },
+      {
+        "category": "Key User-Facing Impacts",
+        "items": [
+          "More stable deployment through Vercel",
+          "Better handling of data files and directories",
+          "Reduced API-related errors and timeouts",
+          "More accurate and contextual changelog entries",
+          "Better integration between Greptile and OpenAI APIs",
+          "Improved debugging capabilities for troubleshooting",
+          "User-centered design implementations",
+          "More reliable web access to changelogs",
+          "Consistent data preservation across deployments"
+        ]
+      }
+    ],
+    "hasGreptileAnalysis": true
+  },
+  {
     "id": "1747469577412",
     "repoName": "tashapais-greptile",
     "repoUrl": "https://github.com/tashapais/greptile",
