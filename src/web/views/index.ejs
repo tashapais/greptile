@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+<div class="changelog-list">
+  <h2>Recent Changes</h2>
+  
+  <% if (changelogs && changelogs.length > 0) { %>
+    <div class="changelogs">
+      <% changelogs.forEach(function(changelog) { %>
+        <div class="changelog-item">
+          <div class="changelog-header">
+            <h3>
+              <a href="/changelog/<%= changelog.id %>"><%= changelog.title %></a>
+            </h3>
+            <span class="changelog-date"><%= new Date(changelog.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+          </div>
+          
+          <div class="changelog-summary">
+            <% if (changelog.entries && changelog.entries.length > 0) { %>
+              <% 
+                // Get the first 3 entries for summary
+                const summaryEntries = changelog.entries.slice(0, 3);
+              %>
+              <ul class="changelog-categories">
+                <% summaryEntries.forEach(function(entry) { %>
+                  <li>
+                    <strong><%= entry.category %>:</strong> 
+                    <% if (entry.items && entry.items.length > 0) { %>
+                      <%= entry.items[0] %><% if (entry.items.length > 1) { %> and <%= entry.items.length - 1 %> more<% } %>
+                    <% } %>
+                  </li>
+                <% }); %>
+              </ul>
+              
+              <% if (changelog.entries.length > 3) { %>
+                <p class="more-entries">
+                  <em>and <%= changelog.entries.length - 3 %> more categories</em>
+                </p>
+              <% } %>
+            <% } else { %>
+              <p>No changes recorded.</p>
+            <% } %>
+          </div>
+          
+          <div class="changelog-link">
+            <a href="/changelog/<%= changelog.id %>" class="btn-view-details">
+              View Full Changelog
+            </a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="empty-state">
+      <h3>No Changelogs Available</h3>
+      <p>Generate your first changelog with the CLI tool:</p>
+      <pre><code>greptile generate --since "1 week ago"</code></pre>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %> 

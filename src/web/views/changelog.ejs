@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+<div class="changelog-detail">
+  <div class="changelog-detail-header">
+    <div class="back-link">
+      <a href="/" class="btn-back">&larr; Back to All Changes</a>
+    </div>
+    
+    <h2><%= changelog.title %></h2>
+    <p class="changelog-detail-date">
+      <%= new Date(changelog.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+    </p>
+    
+    <% if (changelog.timeRange) { %>
+      <p class="changelog-detail-timerange">
+        <small>Changes from <%= changelog.timeRange.since %> to <%= changelog.timeRange.until %></small>
+      </p>
+    <% } %>
+  </div>
+  
+  <div class="changelog-detail-content">
+    <% if (changelog.entries && changelog.entries.length > 0) { %>
+      <div class="changelog-categories-list">
+        <% changelog.entries.forEach(function(entry) { %>
+          <div class="changelog-category">
+            <h3 id="<%= entry.category.toLowerCase().replace(/\s+/g, '-') %>">
+              <%= entry.category %>
+            </h3>
+            
+            <% if (entry.items && entry.items.length > 0) { %>
+              <ul class="changelog-items">
+                <% entry.items.forEach(function(item) { %>
+                  <li><%= item %></li>
+                <% }); %>
+              </ul>
+            <% } else { %>
+              <p>No changes in this category.</p>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <p>No changes recorded in this changelog.</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %> 
