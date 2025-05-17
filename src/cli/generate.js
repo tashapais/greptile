@@ -137,7 +137,7 @@ export async function generateChangelog(options) {
           
           // Try using Greptile API first
           if (process.env.GREPTILE_API_KEY) {
-            codeAnalysis = await analyzeCodeWithGreptile(gitDir, allChangedFiles);
+            codeAnalysis = await analyzeCodeWithGreptile(gitDir, allChangedFiles, commits);
           }
           
           // Fall back to OpenAI if Greptile fails or no API key
@@ -251,7 +251,7 @@ async function isFirstCommitInRepo(commitHash) {
 /**
  * Use Greptile API to analyze code changes
  */
-async function analyzeCodeWithGreptile(gitDir, changedFiles) {
+async function analyzeCodeWithGreptile(gitDir, changedFiles, commits) {
   if (!process.env.GREPTILE_API_KEY) {
     console.log(chalk.yellow('Skipping Greptile analysis - API key not found'));
     return null;
@@ -343,18 +343,32 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
     // Step 2: Now we can query the repository
     console.log(chalk.blue('Querying repository for changelog information...'));
     
+    // Check if commits array exists and has items
+    if (!commits || !Array.isArray(commits) || commits.length === 0) {
+      console.log(chalk.yellow('Warning: No commits provided for Greptile analysis'));
+      commits = [];
+    }
+    
+    // Format commit info for the prompt
+    const commitInfo = commits.map(c => 
+      `${c.hash.substring(0, 8)}: ${c.subject}`
+    ).join('\n');
+    
     const prompt = `
-    Analyze the following repository for changes that should be included in a changelog:
+    Analyze the following SPECIFIC COMMITS from the repository "${repoInfo.owner}/${repoInfo.repo}" to generate a detailed changelog:
     
-    Repository: ${repoInfo.owner}/${repoInfo.repo}
+    RECENT COMMITS TO ANALYZE:
+    ${commitInfo || "No specific commits provided - analyze the repository in general"}
     
-    Focus on:
-    1. Identifying new features, improvements, and bug fixes
-    2. Explaining WHAT changed and HOW it benefits users
-    3. Categorizing changes properly
-    4. Including only user-facing changes
+    Focus SPECIFICALLY on these commits and provide:
+    1. What specific features, improvements, or bug fixes were implemented in THESE commits
+    2. How these specific changes benefit users directly
+    3. Accurate categorization (New Features, Improvements, Bug Fixes, API Changes, Breaking Changes)
+    4. Details about user-facing impacts of these exact commits
     
-    Format the response as a detailed analysis that a changelog generator could use.
+    Avoid generic descriptions. Be precise about what changed in THESE SPECIFIC COMMITS.
+    
+    Format the response as a detailed analysis that clearly explains each commit's impact for a changelog.
     `;
     
     const response = await axios({
@@ -377,7 +391,14 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
           {
             remote: 'github',
             repository: `${repoInfo.owner}/${repoInfo.repo}`,
-            branch: 'main' // Default to main, could be made configurable
+            branch: 'main', // Default to main, could be made configurable
+            // Include relevant time range information if available
+            timeRange: commits.length > 0 ? {
+              // Use the date of the oldest commit as since
+              since: new Date(commits[commits.length - 1].date).toISOString(),
+              // Use the date of the newest commit as until
+              until: new Date(commits[0].date).toISOString()
+            } : undefined
           }
         ],
         sessionId: "session_" + Date.now(),
@@ -388,6 +409,13 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
     
     if (response.data && response.data.message) {
       console.log(chalk.green('Greptile analysis successful!'));
+      
+      // Log the full response for analysis
+      const logDir = path.join(__dirname, '../../logs');
+      await fs.mkdir(logDir, { recursive: true });
+      const logFile = path.join(logDir, `greptile-response-${Date.now()}.json`);
+      await fs.writeFile(logFile, JSON.stringify(response.data, null, 2), 'utf8');
+      console.log(chalk.blue(`Full Greptile response logged to: ${logFile}`));
       
       // Format the analysis with sources
       let formattedAnalysis = `ANALYSIS:\n${response.data.message}\n\n`;
@@ -502,15 +530,17 @@ async function analyzeCodeWithOpenAI(gitDir, changedFiles) {
       const prompt = `
 I need an analysis of the following changed ${ext} files to generate a changelog.
 For each file, please:
-1. Identify the key functionality it provides
-2. Determine if it's a new feature, improvement, bugfix, or other change
-3. Explain how it impacts the overall application
-4. Note any API changes or breaking changes
+1. Identify the SPECIFIC functionality that was added, modified, or fixed
+2. Determine if it's a new feature, improvement, bugfix, or breaking change
+3. Explain how these exact changes impact users - not general file purpose
+4. Provide concrete details about what was changed and why it matters
 
 Changed files:
 ${fileContents}
 
-Format your response as a concise analysis focusing on user-facing changes that could help generate a changelog.
+Focus ONLY on what was actually changed in these specific files, not their general purpose. 
+Be specific about the actual modifications and avoid generic descriptions.
+Format your response as a concise, user-focused analysis of these exact changes.
 `;
 
       const response = await openai.chat.completions.create({
@@ -531,6 +561,14 @@ Format your response as a concise analysis focusing on user-facing changes that 
     // Combine all analyses
     if (analyses.length > 0) {
       console.log(chalk.green('OpenAI code analysis successful!'));
+      
+      // Log the full OpenAI analyses for comparison
+      const logDir = path.join(__dirname, '../../logs');
+      await fs.mkdir(logDir, { recursive: true });
+      const logFile = path.join(logDir, `openai-response-${Date.now()}.json`);
+      await fs.writeFile(logFile, JSON.stringify(analyses, null, 2), 'utf8');
+      console.log(chalk.blue(`Full OpenAI analyses logged to: ${logFile}`));
+      
       return analyses.join('\n\n---\n\n');
     }
     
@@ -657,7 +695,7 @@ Remember to focus on what would matter to end users or developers using this sof
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are an expert technical writer specialized in creating detailed, informative changelogs from git commits. You understand programming concepts deeply and can interpret commit messages to extract meaningful information for users. Focus on being specific and informative rather than generic." },
+        { role: "system", content: "You are an expert technical writer specialized in creating detailed, informative changelogs from git commits. You understand programming concepts deeply and can interpret commit messages to extract meaningful information for users. Focus ONLY on the specific commits provided - do not make up generic changes. Be specific and informative about exactly what changed in these commits and how it impacts users. Avoid vague descriptions." },
         { role: "user", content: prompt }
       ],
       temperature: 0.5, // Lower temperature for more deterministic output
