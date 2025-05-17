@@ -15,9 +15,16 @@ yarn-error.log
 .DS_Store
 Thumbs.db
 
-# Generated data
-data/
+# Generated data - commented out to allow tracking of changelogs
+# data/
+# Instead, ignore specific files we want to exclude
+data/temp/
+data/private/
 
 # Logs
 logs
-*.log 
+*.log
+
+# Vercel
+.vercel 
+.vercel

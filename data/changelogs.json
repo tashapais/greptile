@@ -1,0 +1,143 @@
+[
+  {
+    "id": "1747448679931",
+    "title": "Changes for May 16, 2025",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "2 weeks ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "**Bug Fixes**",
+        "items": [
+          "Fixed issue where the application was not responding correctly when working with the current commit. (Commit: 8b8260cc)",
+          "**General:**",
+          "Initial commit to the repository. (Commit: 8485802e)"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1747446534962",
+    "title": "Changes for May 16, 2025",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "2 weeks ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "New Features",
+        "items": [
+          "N/A"
+        ]
+      },
+      {
+        "category": "Improvements",
+        "items": [
+          "Initial project setup by \"tashapais\""
+        ]
+      },
+      {
+        "category": "Bug Fixes",
+        "items": [
+          "N/A"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1747446507585",
+    "title": "Recent Changes",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "2 weeks ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "Bug Fixes",
+        "items": [
+          "Fixed issue causing the application to crash when selecting a date in the calendar view."
+        ]
+      },
+      {
+        "category": "Improvements",
+        "items": [
+          "Improved performance by optimizing database queries for faster retrieval of user data."
+        ]
+      },
+      {
+        "category": "New Features",
+        "items": [
+          "Added a new dark mode theme option for better visibility in low-light environments."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1747446220711",
+    "title": "Changes for Invalid Date",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "2 weeks ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "Bug Fixes",
+        "items": [
+          "Fixed issue causing the app to crash when trying to save a new entry.",
+          "Resolved a bug that caused incorrect formatting of dates on the calendar view."
+        ]
+      },
+      {
+        "category": "Improvements",
+        "items": [
+          "Improved the performance of loading large datasets for faster response times.",
+          "Enhanced the user interface by adding more intuitive navigation buttons."
+        ]
+      },
+      {
+        "category": "New Features",
+        "items": [
+          "Added a new feature that allows users to set custom reminders for important events.",
+          "Implemented a dark mode option for users who prefer a different color scheme."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1747444910176",
+    "title": "Changes for Invalid Date",
+    "date": "2025-05-17",
+    "timeRange": {
+      "since": "1 week ago",
+      "until": "now"
+    },
+    "entries": [
+      {
+        "category": "Bug Fixes",
+        "items": [
+          "Fixed issue causing the app to crash when opening certain files."
+        ]
+      },
+      {
+        "category": "Improvements",
+        "items": [
+          "Improved performance when loading images in the gallery.",
+          "Enhanced user interface for easier navigation.",
+          "Streamlined the login process for a smoother experience."
+        ]
+      },
+      {
+        "category": "New Features",
+        "items": [
+          "Added a dark mode option for better usability in low-light environments.",
+          "Implemented a search feature to quickly find specific items in the library."
+        ]
+      }
+    ]
+  }
+]

@@ -8,7 +8,12 @@
   },
   "type": "module",
   "scripts": {
-    "start": "node src/web/server.js",
+    "start": "node bin/server.js",
+    "dev": "node src/web/server.js",
+    "build": "mkdir -p data && echo '[]' > data/repo-registry.json",
+    "vercel-build": "npm run build",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -28,5 +33,11 @@
     "express": "^4.18.2",
     "openai": "^4.20.1",
     "simple-git": "^3.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.3.0"
   }
-} 
+}

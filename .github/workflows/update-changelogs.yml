@@ -1,0 +1,49 @@
+name: Update Changelogs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at midnight every day
+  workflow_dispatch:  # Allows manual triggering
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'data/**'  # Avoid triggering when data files are updated
+
+jobs:
+  update-changelogs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate changelogs
+        run: |
+          npx greptile generate --since "1 week ago" --use-greptile
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GREPTILE_API_KEY: ${{ secrets.GREPTILE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Commit and push if changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add data/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update changelogs" && git push)
+
+      - name: Trigger Vercel Deployment
+        run: |
+          curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        if: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }} 
