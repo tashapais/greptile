@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node bin/server.js",
     "dev": "node src/web/server.js",
-    "build": "mkdir -p data && echo '[]' > data/repo-registry.json",
+    "build": "echo 'Preserving existing data files'",
     "vercel-build": "npm run build",
     "deploy": "vercel",
     "deploy:prod": "vercel --prod",
