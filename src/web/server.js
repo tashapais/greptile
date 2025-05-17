@@ -9,32 +9,23 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Try multiple possible paths for the data directory in different environments
-let dataDir = path.join(__dirname, '../../data');
-// Check if we're in a Vercel environment
-const isVercel = process.env.VERCEL === '1';
+// Get the project root directory (2 levels up from src/web)
+const projectRoot = path.join(__dirname, '../..');
 
-if (isVercel) {
-  console.log('Running in Vercel environment, checking alternative paths');
-  
-  // In Vercel, files might be in different locations
-  const possiblePaths = [
-    path.join(__dirname, '../../data'),      // Regular path
-    path.join(process.cwd(), 'data'),        // Working directory + data
-    path.join('/var/task/data'),             // Vercel Lambda path
-    path.join(__dirname, '../data'),         // One level up
-    path.join(__dirname, '../../../data'),   // Three levels up
-  ];
-  
-  // Will be updated in getRepositories() when a valid path is found
-  console.log('Possible data paths:', possiblePaths);
-}
-
+// Set directory paths relative to project root for consistency
+const dataDir = path.join(projectRoot, 'data');
 const viewsDir = path.join(__dirname, 'views');
 const publicDir = path.join(__dirname, 'public');
+
+// Debug logging
+console.log('Project root directory:', projectRoot);
+console.log('Data directory:', dataDir);
+console.log('Views directory:', viewsDir);
+console.log('Public directory:', publicDir);
 
 /**
  * Start the web server
@@ -54,6 +45,26 @@ export async function startServer(options) {
   // Routes
   app.get('/', async (req, res) => {
     try {
+      // Debug: log data directory access
+      console.log('Accessing data directory for repositories:', dataDir);
+      let dirExists = false;
+      try {
+        await fs.access(dataDir);
+        dirExists = true;
+      } catch (err) {
+        console.error('Data directory access error:', err.message);
+      }
+      console.log('Data directory exists:', dirExists);
+      
+      if (dirExists) {
+        try {
+          const files = await fs.readdir(dataDir);
+          console.log('Files in data directory:', files);
+        } catch (err) {
+          console.error('Error listing files in data directory:', err.message);
+        }
+      }
+      
       const repositories = await getRepositories();
       
       if (repositories.length === 0) {
@@ -301,50 +312,22 @@ export async function startServer(options) {
  * Get all repositories
  */
 async function getRepositories() {
-  // If in Vercel environment, try multiple paths
-  if (process.env.VERCEL === '1') {
-    const possiblePaths = [
-      path.join(__dirname, '../../data/repo-registry.json'),
-      path.join(process.cwd(), 'data/repo-registry.json'),
-      path.join('/var/task/data/repo-registry.json'),
-      path.join(__dirname, '../data/repo-registry.json'),
-      path.join(__dirname, '../../../data/repo-registry.json'),
-    ];
-    
-    // Try each path
-    for (const registryPath of possiblePaths) {
-      try {
-        console.log('Trying path:', registryPath);
-        await fs.access(registryPath);
-        console.log('Found repo-registry.json at:', registryPath);
-        const data = await fs.readFile(registryPath, 'utf8');
-        // If we get here, update the dataDir for future use
-        dataDir = path.dirname(registryPath);
-        console.log('Updated dataDir to:', dataDir);
-        return JSON.parse(data);
-      } catch (error) {
-        console.log('Path not found or error:', registryPath, error.code);
-        // Continue to next path
-      }
-    }
-    
-    // If we get here, none of the paths worked
-    console.log('No valid paths found for repo-registry.json');
-    return [];
-  }
-  
-  // Original implementation for non-Vercel environments
   try {
+    console.log('Getting repositories from:', path.join(dataDir, 'repo-registry.json'));
     const registryPath = path.join(dataDir, 'repo-registry.json');
     
     try {
       const data = await fs.readFile(registryPath, 'utf8');
+      console.log('Successfully read repo registry data');
       return JSON.parse(data);
     } catch (error) {
+      console.error('Error reading repo registry:', error.code, error.message);
+      
       if (error.code === 'ENOENT') {
         // Try to check legacy changelog.json as fallback
         try {
           const legacyPath = path.join(dataDir, 'changelogs.json');
+          console.log('Trying legacy path:', legacyPath);
           await fs.access(legacyPath);
           
           // Create an entry for the legacy file
@@ -354,11 +337,10 @@ async function getRepositories() {
             lastUpdated: new Date().toISOString()
           }];
           
-          // Save this registry for future use
-          await fs.writeFile(registryPath, JSON.stringify(registry, null, 2), 'utf8');
-          
+          console.log('Found legacy changelog file');
           return registry;
-        } catch {
+        } catch (legacyError) {
+          console.error('Legacy path error:', legacyError.message);
           // No legacy file either
           return [];
         }
@@ -375,18 +357,17 @@ async function getRepositories() {
  * Get changelogs for a specific repository
  */
 async function getChangelogsForRepo(filename) {
-  // Use the dataDir that was potentially updated in getRepositories()
   try {
+    console.log('Getting changelogs from:', path.join(dataDir, filename));
     const changelogsPath = path.join(dataDir, filename);
-    console.log('Looking for changelog file at:', changelogsPath);
     
     try {
       const data = await fs.readFile(changelogsPath, 'utf8');
-      console.log('Found changelog file:', filename);
+      console.log('Successfully read changelog data for:', filename);
       return JSON.parse(data);
     } catch (error) {
+      console.error('Error reading changelog file:', error.code, error.message);
       if (error.code === 'ENOENT') {
-        console.log('Changelog file not found:', filename);
         // File doesn't exist
         return [];
       }

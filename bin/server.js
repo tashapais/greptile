@@ -6,47 +6,60 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// Debug: Set up file paths and check data directory
+// Determine directory paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const dataDir = path.join(__dirname, '../data');
+const projectRoot = path.join(__dirname, '..');
+const dataDir = path.join(projectRoot, 'data');
 
-async function debugLogFiles() {
+// Debug: Show environment and file paths information
+console.log('----------------------------------------');
+console.log('SERVER STARTING UP');
+console.log('----------------------------------------');
+console.log('Node Environment:', process.env.NODE_ENV);
+console.log('Vercel Environment:', process.env.VERCEL ? 'Yes' : 'No');
+console.log('Project Root:', projectRoot);
+console.log('Current Working Directory:', process.cwd());
+console.log('Data Directory:', dataDir);
+
+// Verify data directory and content
+async function checkDataDirectory() {
   try {
-    console.log('Data directory path:', dataDir);
+    console.log('Checking if data directory exists...');
+    const stats = await fs.stat(dataDir);
+    console.log('Data directory exists:', stats.isDirectory());
     
-    // Check if data directory exists
-    const dirExists = await fs.access(dataDir).then(() => true).catch(() => false);
-    console.log('Data directory exists:', dirExists);
-    
-    if (dirExists) {
-      // List files in data directory
+    if (stats.isDirectory()) {
       const files = await fs.readdir(dataDir);
       console.log('Files in data directory:', files);
       
-      // Check registry file
-      const registryPath = path.join(dataDir, 'repo-registry.json');
-      const registryExists = await fs.access(registryPath).then(() => true).catch(() => false);
-      console.log('Registry file exists:', registryExists);
-      
-      if (registryExists) {
-        const registryContent = await fs.readFile(registryPath, 'utf8');
-        console.log('Registry content:', registryContent);
+      // Check for registry file
+      if (files.includes('repo-registry.json')) {
+        const registryPath = path.join(dataDir, 'repo-registry.json');
+        const content = await fs.readFile(registryPath, 'utf8');
+        console.log('Registry content:', content);
+      } else {
+        console.log('WARNING: No repo-registry.json found!');
       }
     }
   } catch (error) {
-    console.error('Debug error:', error);
+    console.error('Error checking data directory:', error.message);
   }
 }
 
-// Run debug logging
-debugLogFiles();
+// Run checks and start server
+async function run() {
+  await checkDataDirectory();
+  
+  // Default port from environment variables or 3000
+  const port = process.env.PORT || 3000;
+  
+  // Start the server
+  startServer({ port });
+  
+  console.log(`Greptile changelog server running on port ${port}`);
+}
 
-// Default port from environment variables or 3000
-const port = process.env.PORT || 3000;
-
-// Start the server
-startServer({ port });
-
-// Let Vercel know we're running
-console.log(`Greptile changelog server running on port ${port}`); 
+run().catch(err => {
+  console.error('Server initialization error:', err);
+}); 
