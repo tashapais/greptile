@@ -11,7 +11,28 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const dataDir = path.join(__dirname, '../../data');
+
+// Try multiple possible paths for the data directory in different environments
+let dataDir = path.join(__dirname, '../../data');
+// Check if we're in a Vercel environment
+const isVercel = process.env.VERCEL === '1';
+
+if (isVercel) {
+  console.log('Running in Vercel environment, checking alternative paths');
+  
+  // In Vercel, files might be in different locations
+  const possiblePaths = [
+    path.join(__dirname, '../../data'),      // Regular path
+    path.join(process.cwd(), 'data'),        // Working directory + data
+    path.join('/var/task/data'),             // Vercel Lambda path
+    path.join(__dirname, '../data'),         // One level up
+    path.join(__dirname, '../../../data'),   // Three levels up
+  ];
+  
+  // Will be updated in getRepositories() when a valid path is found
+  console.log('Possible data paths:', possiblePaths);
+}
+
 const viewsDir = path.join(__dirname, 'views');
 const publicDir = path.join(__dirname, 'public');
 
@@ -280,6 +301,39 @@ export async function startServer(options) {
  * Get all repositories
  */
 async function getRepositories() {
+  // If in Vercel environment, try multiple paths
+  if (process.env.VERCEL === '1') {
+    const possiblePaths = [
+      path.join(__dirname, '../../data/repo-registry.json'),
+      path.join(process.cwd(), 'data/repo-registry.json'),
+      path.join('/var/task/data/repo-registry.json'),
+      path.join(__dirname, '../data/repo-registry.json'),
+      path.join(__dirname, '../../../data/repo-registry.json'),
+    ];
+    
+    // Try each path
+    for (const registryPath of possiblePaths) {
+      try {
+        console.log('Trying path:', registryPath);
+        await fs.access(registryPath);
+        console.log('Found repo-registry.json at:', registryPath);
+        const data = await fs.readFile(registryPath, 'utf8');
+        // If we get here, update the dataDir for future use
+        dataDir = path.dirname(registryPath);
+        console.log('Updated dataDir to:', dataDir);
+        return JSON.parse(data);
+      } catch (error) {
+        console.log('Path not found or error:', registryPath, error.code);
+        // Continue to next path
+      }
+    }
+    
+    // If we get here, none of the paths worked
+    console.log('No valid paths found for repo-registry.json');
+    return [];
+  }
+  
+  // Original implementation for non-Vercel environments
   try {
     const registryPath = path.join(dataDir, 'repo-registry.json');
     
@@ -321,14 +375,18 @@ async function getRepositories() {
  * Get changelogs for a specific repository
  */
 async function getChangelogsForRepo(filename) {
+  // Use the dataDir that was potentially updated in getRepositories()
   try {
     const changelogsPath = path.join(dataDir, filename);
+    console.log('Looking for changelog file at:', changelogsPath);
     
     try {
       const data = await fs.readFile(changelogsPath, 'utf8');
+      console.log('Found changelog file:', filename);
       return JSON.parse(data);
     } catch (error) {
       if (error.code === 'ENOENT') {
+        console.log('Changelog file not found:', filename);
         // File doesn't exist
         return [];
       }
