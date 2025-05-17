@@ -14,5 +14,10 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "bin/server.js": {
+      "includeFiles": "data/**"
+    }
   }
 } 
