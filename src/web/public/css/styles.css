@@ -330,4 +330,127 @@ footer {
   .changelog-detail {
     padding: 1.5rem;
   }
+}
+
+/* Repository styles */
+.repositories-list {
+  margin-bottom: 2rem;
+}
+
+.repository-item {
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.repository-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.repository-header h2 {
+  margin-bottom: 0.5rem;
+  margin-right: 1rem;
+}
+
+.repo-url {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}
+
+.external-icon {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.repository-meta {
+  color: var(--color-text-light);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.repository-actions {
+  margin-top: 1rem;
+}
+
+.btn-repository {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btn-repository:hover {
+  background-color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+.repo-selector select {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.repo-external-link {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}
+
+.changelog-actions {
+  margin-top: 1rem;
+}
+
+.btn-download {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-secondary);
+  color: white;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btn-download:hover {
+  background-color: var(--color-text);
+  text-decoration: none;
+}
+
+.empty-state-full {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 50vh;
+  padding: 2rem;
+}
+
+.empty-state-content {
+  max-width: 600px;
+}
+
+.empty-state-help {
+  margin-top: 2rem;
+  text-align: left;
+  background-color: var(--color-background-alt);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
 } 

@@ -1,7 +1,18 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { title: repository ? repository.name : 'Changelogs' }) %>
 
 <div class="changelog-list">
-  <h2>Recent Changes</h2>
+  <% if (repository) { %>
+    <div class="repository-header">
+      <h2><%= repository.name %> Changelogs</h2>
+      <% if (repository.url) { %>
+        <a href="<%= repository.url %>" target="_blank" class="repo-url">
+          View on GitHub <span class="external-icon">↗</span>
+        </a>
+      <% } %>
+    </div>
+  <% } else { %>
+    <h2>Recent Changes</h2>
+  <% } %>
   
   <% if (changelogs && changelogs.length > 0) { %>
     <div class="changelogs">
@@ -9,7 +20,7 @@
         <div class="changelog-item">
           <div class="changelog-header">
             <h3>
-              <a href="/changelog/<%= changelog.id %>"><%= changelog.title %></a>
+              <a href="/repo/<%= repository ? repository.name : 'default' %>/changelog/<%= changelog.id %>"><%= changelog.title %></a>
             </h3>
             <span class="changelog-date"><%= new Date(changelog.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></span>
           </div>
@@ -42,7 +53,7 @@
           </div>
           
           <div class="changelog-link">
-            <a href="/changelog/<%= changelog.id %>" class="btn-view-details">
+            <a href="/repo/<%= repository ? repository.name : 'default' %>/changelog/<%= changelog.id %>" class="btn-view-details">
               View Full Changelog
             </a>
           </div>

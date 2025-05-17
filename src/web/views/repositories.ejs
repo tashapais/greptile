@@ -1,0 +1,44 @@
+<%- include('partials/header', { title: 'Repositories' }) %>
+
+<div class="repositories-list">
+  <h2>Repositories</h2>
+  
+  <% if (repositories && repositories.length > 0) { %>
+    <div class="repositories">
+      <% repositories.forEach(function(repo) { %>
+        <div class="repository-item">
+          <div class="repository-header">
+            <h3>
+              <a href="/repo/<%= repo.name %>"><%= repo.name %></a>
+            </h3>
+            <% if (repo.url) { %>
+              <a href="<%= repo.url %>" target="_blank" class="repo-external-link">
+                View on GitHub <span class="external-icon">↗</span>
+              </a>
+            <% } %>
+          </div>
+          
+          <div class="repository-meta">
+            <span class="last-updated">
+              Last updated: <%= new Date(repo.lastUpdated).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+            </span>
+          </div>
+          
+          <div class="repository-actions">
+            <a href="/repo/<%= repo.name %>" class="btn-repository">
+              View Changelogs
+            </a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="empty-state">
+      <h3>No Repositories Available</h3>
+      <p>Generate your first changelog with the CLI tool:</p>
+      <pre><code>greptile generate --since "1 week ago"</code></pre>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %> 

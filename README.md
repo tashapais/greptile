@@ -8,6 +8,20 @@ Greptile is a tool that uses AI to automatically generate changelogs from your g
 - **Web Interface**: Public-facing website to display your changelogs
 - **AI-Powered**: Uses AI to summarize changes in a user-friendly way
 - **Customizable**: Control the date range and title of your changelogs
+- **Multi-Repository Support**: Track changes across multiple repositories
+
+## User-Centered Design
+
+Greptile was built with these user-centered design principles:
+
+- **Repository Awareness**: Automatically detects and organizes changelogs by repository
+- **Automatic Refresh**: Web interface auto-refreshes to show newly generated changelogs without manual intervention
+- **Exportable Content**: Download changelogs as Markdown to easily include in release notes
+- **Context Preservation**: Each changelog maintains its git context with clear repository links
+- **Intelligent Summaries**: The AI focuses on user-relevant changes rather than technical implementation details
+- **Repository Switching**: Easily navigate between multiple repositories from a single interface
+- **Real Repository Details**: Shows repository names and links to their source (GitHub, etc.)
+- **Clean, Responsive UI**: Works well on all devices, with a focus on readability
 
 ## Getting Started
 

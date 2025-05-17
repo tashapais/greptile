@@ -25,6 +25,51 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 /**
+ * Get repository name from remote URL
+ */
+async function getRepoInfo() {
+  try {
+    // Get remote URLs
+    const remotes = await git.remote(['get-url', 'origin']);
+    
+    let repoName = 'unknown-repo';
+    let repoUrl = '';
+    
+    if (remotes) {
+      const remoteUrl = remotes.trim();
+      
+      // Extract repo name and URL
+      if (remoteUrl.includes('github.com')) {
+        const match = remoteUrl.match(/github\.com[/:](.*?)(\.git)?$/);
+        if (match) {
+          repoName = match[1].replace('/', '-');
+          repoUrl = `https://github.com/${match[1]}`;
+        }
+      } else if (remoteUrl.includes('gitlab.com')) {
+        const match = remoteUrl.match(/gitlab\.com[/:](.*?)(\.git)?$/);
+        if (match) {
+          repoName = match[1].replace('/', '-');
+          repoUrl = `https://gitlab.com/${match[1]}`;
+        }
+      } else {
+        // Try to extract just the repo name from the path
+        const parts = remoteUrl.split('/');
+        repoName = parts[parts.length - 1].replace('.git', '');
+      }
+    } else {
+      // If no remote, use the folder name
+      const gitDir = await git.revparse(['--show-toplevel']);
+      repoName = path.basename(gitDir);
+    }
+    
+    return { repoName, repoUrl };
+  } catch (error) {
+    console.error(chalk.yellow('Warning: Could not determine repository info:'), error.message);
+    return { repoName: 'unknown-repo', repoUrl: '' };
+  }
+}
+
+/**
  * Generate a changelog based on git commit history
  */
 export async function generateChangelog(options) {
@@ -45,6 +90,10 @@ export async function generateChangelog(options) {
     } catch (err) {
       console.log(chalk.yellow('Warning: Could not determine git repository path'));
     }
+    
+    // Get repository info
+    const { repoName, repoUrl } = await getRepoInfo();
+    console.log(chalk.blue(`Repository: ${repoName}${repoUrl ? ` (${repoUrl})` : ''}`));
     
     // Get git log
     const commits = await getCommits(options.since, options.until);
@@ -68,12 +117,13 @@ export async function generateChangelog(options) {
     console.log(chalk.blue('Analyzing commits and generating changelog...'));
     
     // Generate changelog using OpenAI
-    const changelog = await generateChangelogWithAI(commits, options);
+    const changelog = await generateChangelogWithAI(commits, options, repoName, repoUrl);
     
     // Save changelog
-    await saveChangelog(changelog);
+    await saveChangelog(changelog, repoName);
     
     console.log(chalk.green('Changelog generated successfully!'));
+    console.log(chalk.blue(`Repository: ${repoName}`));
     console.log(chalk.blue(`Title: ${changelog.title}`));
     console.log(chalk.blue(`Date: ${changelog.date}`));
     console.log(chalk.blue(`Entries: ${changelog.entries.length}`));
@@ -125,18 +175,18 @@ async function getCommits(since, until) {
 /**
  * Generate changelog with AI
  */
-async function generateChangelogWithAI(commits, options) {
+async function generateChangelogWithAI(commits, options, repoName, repoUrl) {
   // Format commits for the AI
   const commitsText = commits.map(c => 
     `${c.hash} | ${c.date} | ${c.author} | ${c.subject}`
   ).join('\n');
   
   // Generate title if not provided
-  const title = options.title || generateTitle(commits);
+  const title = options.title || generateTitle(commits, repoName);
   
   // Prepare prompt for OpenAI
   const prompt = `
-I need a changelog based on the following git commits. 
+I need a changelog for the repository "${repoName}" based on the following git commits. 
 Please categorize the changes into sections like "New Features", "Improvements", "Bug Fixes", etc.
 Format them as bullet points that are clear and user-focused.
 Only include changes that would be relevant to users of the product.
@@ -164,6 +214,8 @@ ${commitsText}
     
     return {
       id: Date.now().toString(),
+      repoName,
+      repoUrl,
       title,
       date: new Date().toISOString().split('T')[0],
       timeRange: {
@@ -229,14 +281,13 @@ function processChangelogContent(content) {
 /**
  * Generate a title based on the date range
  */
-function generateTitle(commits) {
+function generateTitle(commits, repoName) {
   const dateFormat = { month: 'long', day: 'numeric', year: 'numeric' };
   
   if (commits.length === 0) {
-    return 'Changelog';
+    return repoName ? `${repoName} Changelog` : 'Changelog';
   }
   
-  // Sort commits by date
   try {
     // Validate dates before sorting
     commits = commits.filter(commit => {
@@ -245,7 +296,7 @@ function generateTitle(commits) {
     });
     
     if (commits.length === 0) {
-      return 'Recent Changes';
+      return repoName ? `${repoName} Recent Changes` : 'Recent Changes';
     }
     
     commits.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -256,35 +307,41 @@ function generateTitle(commits) {
     // Verify dates are valid
     if (isNaN(firstDate.getTime()) || isNaN(lastDate.getTime())) {
       console.log(chalk.yellow('Warning: Invalid date detected in commits'));
-      return 'Recent Changes';
+      return repoName ? `${repoName} Recent Changes` : 'Recent Changes';
     }
     
     const firstDateStr = firstDate.toLocaleDateString('en-US', dateFormat);
     const lastDateStr = lastDate.toLocaleDateString('en-US', dateFormat);
     
+    const prefix = repoName ? `${repoName}: ` : '';
+    
     if (firstDateStr === lastDateStr) {
-      return `Changes for ${firstDateStr}`;
+      return `${prefix}Changes for ${firstDateStr}`;
     }
     
-    return `Changes from ${firstDateStr} to ${lastDateStr}`;
+    return `${prefix}Changes from ${firstDateStr} to ${lastDateStr}`;
   } catch (error) {
     console.log(chalk.yellow(`Warning: Error generating title: ${error.message}`));
-    return 'Recent Changes';
+    return repoName ? `${repoName} Recent Changes` : 'Recent Changes';
   }
 }
 
 /**
  * Save the changelog to a JSON file
  */
-async function saveChangelog(changelog) {
+async function saveChangelog(changelog, repoName) {
   try {
     // Create data directory if it doesn't exist
     await fs.mkdir(dataDir, { recursive: true });
     
-    // Check if changelogs.json exists
-    let changelogs = [];
-    const changelogsPath = path.join(dataDir, 'changelogs.json');
+    // Create a filename based on the repository name
+    const repoFileName = repoName.replace(/[^\w\-]/g, '_').toLowerCase();
+    const changelogsPath = path.join(dataDir, `${repoFileName}.json`);
     
+    console.log(chalk.blue(`Using changelog file: ${changelogsPath}`));
+    
+    // Check if repo-specific changelog file exists
+    let changelogs = [];
     try {
       const data = await fs.readFile(changelogsPath, 'utf8');
       changelogs = JSON.parse(data);
@@ -298,9 +355,49 @@ async function saveChangelog(changelog) {
     // Save to file
     await fs.writeFile(changelogsPath, JSON.stringify(changelogs, null, 2), 'utf8');
     
+    // Also maintain a registry of all repositories
+    await updateRepoRegistry(repoName, changelog.repoUrl);
+    
     console.log(chalk.green(`Changelog saved to ${changelogsPath}`));
   } catch (error) {
     console.error(chalk.red('Error saving changelog:'), error.message);
     throw error;
+  }
+}
+
+/**
+ * Update the repository registry
+ */
+async function updateRepoRegistry(repoName, repoUrl) {
+  try {
+    const registryPath = path.join(dataDir, 'repo-registry.json');
+    
+    let registry = [];
+    try {
+      const data = await fs.readFile(registryPath, 'utf8');
+      registry = JSON.parse(data);
+    } catch (error) {
+      // File doesn't exist or is invalid, start with empty array
+    }
+    
+    // Check if repo exists in registry
+    const existingIndex = registry.findIndex(r => r.name === repoName);
+    const repoData = {
+      name: repoName,
+      url: repoUrl,
+      filename: repoName.replace(/[^\w\-]/g, '_').toLowerCase() + '.json',
+      lastUpdated: new Date().toISOString()
+    };
+    
+    if (existingIndex >= 0) {
+      registry[existingIndex] = repoData;
+    } else {
+      registry.push(repoData);
+    }
+    
+    await fs.writeFile(registryPath, JSON.stringify(registry, null, 2), 'utf8');
+  } catch (error) {
+    console.log(chalk.yellow('Warning: Error updating repository registry:'), error.message);
+    // Don't throw - this is not critical functionality
   }
 } 

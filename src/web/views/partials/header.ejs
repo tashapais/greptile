@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Greptile Changelog</title>
+  <title><%= typeof title !== 'undefined' ? title + ' - ' : '' %>Greptile Changelog</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  
+  <!-- Auto-refresh for repository pages -->
+  <% if (typeof repository !== 'undefined') { %>
+    <meta http-equiv="refresh" content="60">
+  <% } %>
 </head>
 <body>
   <header>
@@ -19,6 +24,16 @@
         <nav>
           <ul>
             <li><a href="/">Home</a></li>
+            <% if (typeof repositories !== 'undefined' && repositories.length > 1) { %>
+              <li class="repo-selector">
+                <select id="repo-dropdown" onchange="window.location.href='/repo/' + this.value">
+                  <option value="">Select Repository</option>
+                  <% repositories.forEach(function(repo) { %>
+                    <option value="<%= repo.name %>" <%= typeof repository !== 'undefined' && repository.name === repo.name ? 'selected' : '' %>><%= repo.name %></option>
+                  <% }); %>
+                </select>
+              </li>
+            <% } %>
             <li><a href="https://github.com/yourusername/greptile" target="_blank">GitHub</a></li>
           </ul>
         </nav>

@@ -1,10 +1,18 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { title: changelog.title }) %>
 
 <div class="changelog-detail">
   <div class="changelog-detail-header">
     <div class="back-link">
-      <a href="/" class="btn-back">&larr; Back to All Changes</a>
+      <a href="/repo/<%= repository ? repository.name : 'default' %>" class="btn-back">&larr; Back to All Changes</a>
     </div>
+    
+    <% if (repository && repository.url) { %>
+      <div class="repo-link">
+        <a href="<%= repository.url %>" target="_blank" class="repo-url">
+          View Repository <span class="external-icon">↗</span>
+        </a>
+      </div>
+    <% } %>
     
     <h2><%= changelog.title %></h2>
     <p class="changelog-detail-date">
@@ -16,6 +24,12 @@
         <small>Changes from <%= changelog.timeRange.since %> to <%= changelog.timeRange.until %></small>
       </p>
     <% } %>
+    
+    <div class="changelog-actions">
+      <a href="/repo/<%= repository ? repository.name : 'default' %>/changelog/<%= changelog.id %>/download" class="btn-download">
+        Download as Markdown
+      </a>
+    </div>
   </div>
   
   <div class="changelog-detail-content">
