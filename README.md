@@ -130,26 +130,22 @@ MIT
 
 The tool integrates with the Greptile API for enhanced code analysis following the official API specification at [api.greptile.com/v2/query](https://www.greptile.com/docs/api-reference/query).
 
-This integration requires:
-
-1. An active Greptile account (sign up at [greptile.com](https://www.greptile.com))
+To use the Greptile API integration:
+1. Your repository must be on GitHub
 2. A valid Greptile API key with proper permissions
-3. A GitHub personal access token with appropriate repository access permissions
+3. A GitHub token with repository access permissions
 
-The integration works in two steps:
-1. First, the tool indexes your repository with Greptile
-2. Then it queries Greptile for detailed changelog-oriented analysis
+The Greptile integration provides deeper code understanding by:
+1. Indexing your repository first
+2. Analyzing the full codebase context
+3. Providing more meaningful and accurate changelog entries
 
-**Required Environment Variables:**
-```
-GREPTILE_API_KEY=your_greptile_api_key
-GITHUB_TOKEN=your_github_personal_access_token
-```
+Note: A GitHub token with repository access is required because Greptile needs to index your repository before querying it.
 
-**Note**: The current implementation includes automatic fallback to OpenAI if:
+The tool falls back to OpenAI for code analysis in these cases:
 - The Greptile API credentials are not set
 - The Greptile API returns an error
-- The repository cannot be indexed or queried
+- The repository is not on GitHub
 
 This ensures that you'll always get high-quality changelog generation even without Greptile API access.
 

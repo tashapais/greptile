@@ -298,7 +298,7 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
           'X-GitHub-Token': process.env.GITHUB_TOKEN || ''
         },
         data: {
-          remote: repoUrl,
+          remote: 'github',
           repository: `${repoInfo.owner}/${repoInfo.repo}`,
           branch: 'main', // Default to main, could be made configurable
           reload: true,
@@ -321,9 +321,21 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
         } else {
           console.log(chalk.yellow(`Status: ${error.response.status}`));
           console.log(chalk.yellow(`Data: ${JSON.stringify(error.response.data, null, 2)}`));
+          
+          // Additional guidance for specific error conditions
+          if (error.response.status === 401) {
+            console.log(chalk.yellow('Error: Authentication failed. Check your GREPTILE_API_KEY and GITHUB_TOKEN values.'));
+          } else if (error.response.status === 403) {
+            console.log(chalk.yellow('Error: Permission denied. Ensure your API key and GitHub token have sufficient permissions.'));
+          } else if (error.response.status === 400) {
+            console.log(chalk.yellow('Error: Bad request. Please check your query parameters.'));
+          }
+          
+          console.log(chalk.blue('Falling back to OpenAI for code analysis...'));
           return null;
         }
       } else {
+        console.log(chalk.blue('Falling back to OpenAI for code analysis...'));
         return null;
       }
     }
@@ -363,7 +375,7 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
         ],
         repositories: [
           {
-            remote: repoUrl,
+            remote: 'github',
             repository: `${repoInfo.owner}/${repoInfo.repo}`,
             branch: 'main' // Default to main, could be made configurable
           }
@@ -398,7 +410,18 @@ async function analyzeCodeWithGreptile(gitDir, changedFiles) {
     if (error.response) {
       console.log(chalk.yellow(`Status: ${error.response.status}`));
       console.log(chalk.yellow(`Data: ${JSON.stringify(error.response.data, null, 2)}`));
+      
+      // Additional guidance for specific error conditions
+      if (error.response.status === 401) {
+        console.log(chalk.yellow('Error: Authentication failed. Check your GREPTILE_API_KEY and GITHUB_TOKEN values.'));
+      } else if (error.response.status === 403) {
+        console.log(chalk.yellow('Error: Permission denied. Ensure your API key and GitHub token have sufficient permissions.'));
+      } else if (error.response.status === 400) {
+        console.log(chalk.yellow('Error: Bad request. Please check your query parameters.'));
+      }
     }
+    
+    console.log(chalk.blue('Falling back to OpenAI for code analysis...'));
     return null;
   }
 }
@@ -565,11 +588,21 @@ async function getFilesContent(filePaths, gitDir) {
 async function generateChangelogWithAI(commits, options, repoName, repoUrl, codeAnalysis) {
   // Format commits for the AI with more detail
   const commitsText = commits.map(c => 
-    `${c.hash} | ${c.date} | ${c.author} | ${c.subject}`
+    `${c.hash.substring(0, 8)} | ${c.date} | ${c.author} | ${c.subject}`
   ).join('\n');
   
   // Generate title if not provided
   const title = options.title || await generateTitle(commits, repoName, codeAnalysis);
+  
+  // Limit codeAnalysis to reduce token usage
+  let trimmedAnalysis = null;
+  if (codeAnalysis) {
+    // Keep only the first part of the analysis
+    const maxLength = 3000;
+    trimmedAnalysis = codeAnalysis.length > maxLength 
+      ? codeAnalysis.substring(0, maxLength) + '... [analysis truncated]'
+      : codeAnalysis;
+  }
   
   // Enhanced prompt with more context and direction
   let prompt = `
@@ -616,8 +649,8 @@ Remember to focus on what would matter to end users or developers using this sof
 `;
 
   // Add Greptile analysis to prompt if available
-  if (codeAnalysis) {
-    prompt += `\nADDITIONAL CODEBASE ANALYSIS:\n${codeAnalysis}\n\nIncorporate the above codebase analysis into your changelog to provide more accurate and detailed information about the changes.`;
+  if (trimmedAnalysis) {
+    prompt += `\nADDITIONAL CODEBASE ANALYSIS (partial):\n${trimmedAnalysis}\n\nIncorporate this partial codebase analysis into your changelog to provide more accurate and detailed information about the changes.`;
   }
 
   try {
@@ -628,6 +661,7 @@ Remember to focus on what would matter to end users or developers using this sof
         { role: "user", content: prompt }
       ],
       temperature: 0.5, // Lower temperature for more deterministic output
+      max_tokens: 1000, // Limit output size to avoid token limits
     });
 
     const content = response.choices[0].message.content.trim();
@@ -761,80 +795,51 @@ function generateTitle(commits, repoName, codeAnalysis) {
  * Generate a descriptive title using OpenAI
  */
 async function generateDescriptiveTitle(commits, repoName, codeAnalysis) {
-  if (!process.env.OPENAI_API_KEY) {
-    // Fall back to simple title based on commit messages
-    const prefix = repoName ? `${repoName}: ` : '';
-    if (commits.length === 1) {
-      // For a single commit, use the commit message
-      return `${prefix}${commits[0].subject}`;
-    } else {
-      // For multiple commits, use the most recent commit message
-      return `${prefix}${commits[0].subject}`;
-    }
+  // Limit codeAnalysis to reduce token usage
+  let trimmedAnalysis = codeAnalysis;
+  if (codeAnalysis && codeAnalysis.length > 2000) {
+    // Keep only the first part of the analysis up to 2000 chars
+    trimmedAnalysis = codeAnalysis.substring(0, 2000) + '... [analysis truncated]';
   }
   
-  try {
-    console.log(chalk.blue('Generating descriptive title...'));
-    
-    // Prepare commit information
-    const commitsInfo = commits.map(c => `${c.hash.substring(0, 7)}: ${c.subject}`).join('\n');
-    
-    // Create a condensed version of the code analysis
-    const analysisExcerpt = codeAnalysis ? 
-      codeAnalysis.split('\n').slice(0, 10).join('\n') + (codeAnalysis.split('\n').length > 10 ? '...' : '') : 
-      'No code analysis available';
-    
-    const prompt = `
-Based on the following commit messages and code analysis, generate a concise, descriptive title for a changelog entry.
-The title should clearly communicate the most significant changes to end users in 5-10 words.
-Focus on features, improvements, or fixes that matter to users rather than implementation details.
-Don't include dates or repository names in the title.
+  const prompt = `
+Generate a concise, descriptive title for a changelog of the repository "${repoName}" based on the following information:
 
 COMMITS:
-${commitsInfo}
+${commits.slice(0, 5).map(c => `${c.subject}`).join('\n')}
+${commits.length > 5 ? `... and ${commits.length - 5} more` : ''}
 
-CODE ANALYSIS EXCERPT:
-${analysisExcerpt}
+${trimmedAnalysis ? `CODE ANALYSIS (partial):\n${trimmedAnalysis}` : ''}
 
-Title:
+Requirements for the title:
+1. Be specific about the main features or improvements
+2. Keep it under 80 characters
+3. No generic titles like "Updates and improvements"
+4. No dates in the title
+5. Focus on the most impactful user-facing changes
+6. Return ONLY the title text with no quotes or formatting
 `;
 
+  try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { 
-          role: "system", 
-          content: "You are a technical writer that creates concise, descriptive changelog titles. Create titles that communicate the essence of changes to users without technical jargon." 
-        },
+        { role: "system", content: "You generate concise, meaningful titles for changelogs based on commit messages and code analysis. Return only the title text with no additional explanation or formatting." },
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 50
+      max_tokens: 40, // Limit response size
     });
 
-    let title = response.choices[0].message.content.trim();
+    const title = response.choices[0].message.content.trim()
+      .replace(/^["']|["']$/g, '') // Remove quotes if present
+      .replace(/\.$/g, '');        // Remove trailing period if present
     
-    // Remove any quotes or period at the end
-    title = title.replace(/^["']|["']$|\.$/g, '');
-    
-    // Add the repository prefix
-    const prefix = repoName ? `${repoName}: ` : '';
-    return `${prefix}${title}`;
+    return title;
   } catch (error) {
-    console.log(chalk.yellow(`Warning: Error generating descriptive title: ${error.message}`));
-    
-    // Fall back to date-based title
-    const dateFormat = { month: 'long', day: 'numeric', year: 'numeric' };
-    const prefix = repoName ? `${repoName}: ` : '';
-    
-    if (commits.length > 0) {
-      const date = new Date(commits[0].date);
-      if (!isNaN(date.getTime())) {
-        return `${prefix}Changes for ${date.toLocaleDateString('en-US', dateFormat)}`;
-      }
-    }
-    
-    return `${prefix}Recent Changes`;
+    console.log(chalk.yellow(`Error generating title: ${error.message}`));
+    // Fallback to a simple repo-based title
+    return `${repoName} Updates`;
   }
 }
 
