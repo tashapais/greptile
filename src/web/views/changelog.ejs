@@ -1,4 +1,4 @@
-<%- include('partials/header', { title: changelog.title }) %>
+<%- include('partials/header', { title: changelog.title.replace(repository ? repository.name + ': ' : '', '') }) %>
 
 <div class="changelog-detail">
   <div class="changelog-detail-header">
@@ -14,9 +14,9 @@
       </div>
     <% } %>
     
-    <h2><%= changelog.title %></h2>
+    <h2><%= changelog.title.replace(repository ? repository.name + ': ' : '', '') %></h2>
     <p class="changelog-detail-date">
-      <%= new Date(changelog.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+      <%= new Date(changelog.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
     </p>
     
     <% if (changelog.timeRange) { %>

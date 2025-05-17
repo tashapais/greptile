@@ -29,6 +29,7 @@ program
   .option('-u, --until <date>', 'End date for commits', 'now')
   .option('-o, --output <path>', 'Output file (default: changelog JSON in data directory)')
   .option('-t, --title <title>', 'Changelog title (default: generates based on date range)')
+  .option('-g, --use-greptile', 'Use Greptile API for deeper codebase understanding', false)
   .action(generateChangelog);
 
 program

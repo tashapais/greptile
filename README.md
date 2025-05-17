@@ -22,6 +22,7 @@ Greptile was built with these user-centered design principles:
 - **Repository Switching**: Easily navigate between multiple repositories from a single interface
 - **Real Repository Details**: Shows repository names and links to their source (GitHub, etc.)
 - **Clean, Responsive UI**: Works well on all devices, with a focus on readability
+- **Code Analysis Integration**: Uses Greptile API for deep codebase understanding and more meaningful changelogs
 
 ## Getting Started
 
@@ -30,6 +31,7 @@ Greptile was built with these user-centered design principles:
 - Node.js 18+
 - Git
 - OpenAI API key
+- Greptile API key (optional, but recommended for better code analysis)
 
 ### Installation
 
@@ -46,7 +48,7 @@ npm install -g .
 
 # Copy and edit the environment variables file
 cp env.sample .env
-# Edit .env and add your OpenAI API key
+# Edit .env and add your OpenAI API key and Greptile API key
 ```
 
 ### Usage
@@ -66,6 +68,7 @@ Available options:
 - `--until <date>`: End date for commits (default: "now")
 - `--title <title>`: Custom title for the changelog (optional)
 - `--output <path>`: Custom output file path (optional)
+- `--use-greptile, -g`: Enable enhanced code analysis using Greptile API (optional)
 
 #### Start the web server
 
@@ -120,3 +123,41 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT 
+
+## Advanced Features
+
+### Greptile API Integration
+
+The tool integrates with the Greptile API for enhanced code analysis following the official API specification at [api.greptile.com/v2/query](https://www.greptile.com/docs/api-reference/query).
+
+This integration requires:
+
+1. An active Greptile account (sign up at [greptile.com](https://www.greptile.com))
+2. A valid Greptile API key with proper permissions
+3. A GitHub personal access token with appropriate repository access permissions
+
+The integration works in two steps:
+1. First, the tool indexes your repository with Greptile
+2. Then it queries Greptile for detailed changelog-oriented analysis
+
+**Required Environment Variables:**
+```
+GREPTILE_API_KEY=your_greptile_api_key
+GITHUB_TOKEN=your_github_personal_access_token
+```
+
+**Note**: The current implementation includes automatic fallback to OpenAI if:
+- The Greptile API credentials are not set
+- The Greptile API returns an error
+- The repository cannot be indexed or queried
+
+This ensures that you'll always get high-quality changelog generation even without Greptile API access.
+
+To use this feature:
+
+1. Set up your Greptile account and get an API key
+2. Create a GitHub personal access token with appropriate permissions
+3. Add both keys to your `.env` file
+4. Run the generator with the `--use-greptile` flag
+
+If you don't have Greptile API access, the tool will automatically use OpenAI for code analysis. 
