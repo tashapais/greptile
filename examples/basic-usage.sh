@@ -14,3 +14,5 @@ greptile generate --since "1 week ago" --until "now"
 # Start the web server to view the changelog
 echo "Starting web server to view the changelog..."
 greptile serve 
+
+##check to see if it makes a summary out of this and inline comments
